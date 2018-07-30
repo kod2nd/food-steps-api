@@ -8,6 +8,9 @@
     "test:watch": "jest --watch",
     "dev": "npx nodemon server.js"
   },
+  "jest": {
+    "testEnvironment": "node"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
