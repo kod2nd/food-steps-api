@@ -21,7 +21,7 @@ const schema = Schema({
         ref: "GlobalLocation",
         required: true,
         validate: {
-            validator: function (locationID) {
+            validator: function (locationId) {
                 return GlobalLocation.findById(locationId)
             },
             message: "Invalid Location!"
