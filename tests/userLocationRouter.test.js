@@ -2,7 +2,7 @@ const express = require('express');
 const request = require('supertest');
 const app = express();
 
-const userLocationsRouter = require('../routes/userLocations');
+const userLocationsRouter = require('../routes/userLocationRouter');
 userLocationsRouter(app);
 
 test('GET /user/:id/locations should return proper message from userLocations router', async () => {

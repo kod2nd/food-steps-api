@@ -5,10 +5,10 @@ app.use(express.json())
 
 // Routes
 const indexRouter = require('./routes/index')
-const userLocationsRouter = require ('./routes/userLocations')
+const userLocationRouter = require ('./routes/userLocationRouter')
 
 indexRouter(app)
-userLocationsRouter(app)
+userLocationRouter(app)
 
 // Error Handlers
 app.use((req, res, next) => {
