@@ -1,10 +1,6 @@
 const app = require('../app')
 const request = require('supertest');
 
-const { MongoMemoryServer } = require('mongodb-memory-server')
-const mongod = new MongoMemoryServer();
-const mongoose = require('mongoose')
-
 const User = require('../models/User');
 const UserLocation = require('../models/UserLocation');
 const GlobalLocation = require('../models/GlobalLocation');
@@ -26,6 +22,21 @@ const createUser = async (username, password) => {
     return userCreated._id;
 };
 
+// Need to place these helper functions into a different file
+const inputTestLocation = (lat, lng) => {
+    return {
+        lat,
+        lng,
+        geocodedLocationName: "Test Location",
+        locationName: "User Given name for Test Location"
+    }
+}
+
+const inputTestPublicLocation = (lat, lng) => {
+    const privatelocation = inputTestLocation(lat, lng)
+    return { ...privatelocation, isPublic: true }
+}
+
 beforeAll(setupMemoryServer);
 afterAll(tearDownMemoryServer);
 
@@ -45,19 +56,23 @@ test('GET /locations/user/:id should return proper message from userLocations ro
 
 test('POST /locations/user/:id for new global location should create both userLocation and globalLocation ', async () => {
 
-    const response = await request(app).post(`/locations/user/${userId}`).send({
-        lat: 1.2828,
-        lng: 103.8304,
-        geocodedLocationName: "Test Location",
-        isPublic: true,
-        locationName: "User Given name for Test Location"
-    });
+    const response = await request(app).post(`/locations/user/${userId}`).send(inputTestPublicLocation(1.2828, 103.8304));
     expect(response.status).toBe(200);
     expect(response.body.message).toEqual('Location created');
 
     const userLocations = await UserLocation.find({ userId: userId });
     expect(userLocations.length).toBe(1);
-    
+
     const globalLocation = await GlobalLocation.findById(userLocations[0].globalLocation);
     expect(globalLocation.geocodedLocationName).toBeDefined();
+});
+
+test('POST /locations/user/:id for newly created userLocation should have isPublic set as "false" by default if isPublic is not supplied in POST request', async () => {
+
+    const response = await request(app).post(`/locations/user/${userId}`).send(inputTestLocation(1.2828, 103.8304));
+    expect(response.status).toBe(200);
+    expect(response.body.message).toEqual('Location created');
+
+    const userLocations = await UserLocation.find({ userId: userId });
+    expect(userLocations[0].isPublic).toBe(false);
 });
