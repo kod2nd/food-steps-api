@@ -21,7 +21,7 @@ describe("POST /account/signup", () => {
   it("should be able to sign up when valid body is posted", async () => {
     const newUser = {
       username: "user12",
-      password: "123456",
+      password: "12345678",
       email: "abc@abc.com"
     };
     const response = await request(app)
@@ -58,7 +58,7 @@ describe("POST /account/signup", () => {
     expect(response.status).toBe(400);
   });
 
-  it.only("should not be able to sign up when password is not between 8 to 20 characters", async () => {
+  it("should not be able to sign up when password is not between 8 to 20 characters", async () => {
     const badUser1 = {
       // password less than 8 characters
       username: "mayuri",
@@ -83,5 +83,5 @@ describe("POST /account/signup", () => {
       .send(badUser2);
     expect(response.status).toBe(400);
   });
-  
+
 });
