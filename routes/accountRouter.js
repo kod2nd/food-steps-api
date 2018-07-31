@@ -1,5 +1,5 @@
 const express = require("express");
-const accountRouter = express.Router();
+const errorHandler = require("../middlewares/error-handler");
 const User = require("../models/User");
 const handleAsyncError = require('../utils/handleAsyncError');
 
@@ -26,5 +26,5 @@ accountRouter.post(
 );
 
 module.exports = app => {
-  app.use("/account", accountRouter);
+	app.use("/account", accountRouter, errorHandler);
 };

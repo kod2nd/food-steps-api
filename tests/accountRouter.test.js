@@ -15,16 +15,44 @@ it("get /account should return welcome message", async () => {
 	expect(response.body.message).toBe("Welcome!");
 });
 
-test.only("post /account/signup should be able to sign up ", async () => {
-	const newUser = {
-		username: "user12",
-		password: "123456",
-		email: "abc@abc.com"
-	};
-	const response = await request(app)
-		.post("/account/signup")
-		.send(newUser);
-	expect(response.status).toBe(201);
-	const userCreated = await User.findOne({ username: "user12" });
-	expect(userCreated.username).toBe("user12");
+describe("POST /account/signup", () => {
+	it("should be able to sign up when valid body is posted", async () => {
+		const newUser = {
+			username: "user12",
+			password: "123456",
+			email: "abc@abc.com"
+		};
+		const response = await request(app)
+			.post("/account/signup")
+			.send(newUser);
+		expect(response.status).toBe(201);
+		const userCreated = await User.findOne({ username: "user12" });
+		expect(userCreated.username).toBe("user12");
+	});
+
+	it("should not be able to sign up when username is not between 6 to 20 characters", async () => {
+		const badUser1 = {
+			// username less than 6 characters
+			username: "user",
+			password: "123456",
+			email: "abc@abc.com"
+		};
+
+		const badUser2 = {
+			// username more than 20 characters
+			username: "123456789012345678901",
+			password: "123456",
+			email: "abc@abc.com"
+		};
+
+		let response = await request(app)
+			.post("/account/signup")
+			.send(badUser1);
+		expect(response.status).toBe(400);
+
+		response = await request(app)
+			.post("/account/signup")
+			.send(badUser2);
+		expect(response.status).toBe(400);
+	});
 });
