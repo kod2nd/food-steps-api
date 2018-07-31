@@ -4,10 +4,10 @@ const { Schema } = mongoose;
 const schema = Schema({
     lat: {type: Number, required: true},
     lng: {type: Number, required: true},
-    name: {type: String, required: true},
+    geocodedLocationName: {type: String, required: true},
     reverseGeocodeAddress: String,
     collectiveRating: Number,
-    numOfUserRating: Number,
+    numOfUserRating: Number
 
 });
 
