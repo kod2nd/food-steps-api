@@ -37,10 +37,17 @@ const inputTestPublicLocation = (lat, lng) => {
     return { ...privatelocation, isPublic: true }
 }
 
+const addLocationFromDiffUser = async () => {
+    const userThatAddsLocation = await createUser("addlocation", "12345678")
+    await request(app).post(`/locations/user/${userThatAddsLocation}`).send(inputTestLocation(1.2828, 103.8304))
+}
+
 beforeAll(setupMemoryServer);
 afterAll(tearDownMemoryServer);
 
 let userId;
+let lat = 1.2828
+let lng = 103.8304
 
 beforeEach(async () => {
     resetMemoryServer()
@@ -69,7 +76,7 @@ test('POST /locations/user/:id for new global location should create both userLo
 
 test('POST /locations/user/:id for newly created userLocation should have isPublic set as "false" by default if isPublic is not supplied in POST request', async () => {
 
-    const response = await request(app).post(`/locations/user/${userId}`).send(inputTestLocation(1.2828, 103.8304));
+    const response = await request(app).post(`/locations/user/${userId}`).send(inputTestLocation(lat, lng));
     expect(response.status).toBe(201);
     expect(response.body.message).toEqual('Location created');
 
@@ -77,15 +84,15 @@ test('POST /locations/user/:id for newly created userLocation should have isPubl
     expect(userLocations[0].isPublic).toBe(false);
 });
 
-test.skip('POST /locations/user/:id for new global location should create both userLocation and globalLocation ', async () => {
+test.skip('POST /locations/user/:id Should not add to globalLocation if, the global location already contains the same lat and lng.', async () => {
 
-    const response = await request(app).post(`/locations/user/${userId}`).send(inputTestPublicLocation(1.2828, 103.8304));
-    // expect(response.status).toBe(200);
-    // expect(response.body.message).toEqual('Location created');
+    await addLocationFromDiffUser()
 
-    const userLocations = await UserLocation.find({ userId: userId });
-    expect(userLocations.length).toBe(1);
+    await request(app).post(`/locations/user/${userId}`).send(inputTestPublicLocation(lat, lng));
 
-    const globalLocation = await GlobalLocation.findById(userLocations[0].globalLocation);
-    expect(globalLocation.geocodedLocationName).toBeDefined();
+    const globalLocation = await GlobalLocation.find({
+        lat: lat,
+        lng: lng
+    });
+    expect(globalLocation.length).toEqual(1);
 });
