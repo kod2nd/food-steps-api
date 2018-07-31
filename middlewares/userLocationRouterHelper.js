@@ -24,7 +24,7 @@ const postLocationsHandler = async (req, res, next) => {
 
     await userLocation.save()
 
-    res.json({ message: "Location created" })
+    res.status(201).json({ message: "Location created" })
 }
 
 module.exports = {

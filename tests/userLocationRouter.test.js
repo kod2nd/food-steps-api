@@ -57,7 +57,7 @@ test('GET /locations/user/:id should return proper message from userLocations ro
 test('POST /locations/user/:id for new global location should create both userLocation and globalLocation ', async () => {
 
     const response = await request(app).post(`/locations/user/${userId}`).send(inputTestPublicLocation(1.2828, 103.8304));
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(201);
     expect(response.body.message).toEqual('Location created');
 
     const userLocations = await UserLocation.find({ userId: userId });
@@ -70,9 +70,22 @@ test('POST /locations/user/:id for new global location should create both userLo
 test('POST /locations/user/:id for newly created userLocation should have isPublic set as "false" by default if isPublic is not supplied in POST request', async () => {
 
     const response = await request(app).post(`/locations/user/${userId}`).send(inputTestLocation(1.2828, 103.8304));
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(201);
     expect(response.body.message).toEqual('Location created');
 
     const userLocations = await UserLocation.find({ userId: userId });
     expect(userLocations[0].isPublic).toBe(false);
+});
+
+test.skip('POST /locations/user/:id for new global location should create both userLocation and globalLocation ', async () => {
+
+    const response = await request(app).post(`/locations/user/${userId}`).send(inputTestPublicLocation(1.2828, 103.8304));
+    // expect(response.status).toBe(200);
+    // expect(response.body.message).toEqual('Location created');
+
+    const userLocations = await UserLocation.find({ userId: userId });
+    expect(userLocations.length).toBe(1);
+
+    const globalLocation = await GlobalLocation.findById(userLocations[0].globalLocation);
+    expect(globalLocation.geocodedLocationName).toBeDefined();
 });
