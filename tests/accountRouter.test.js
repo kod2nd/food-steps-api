@@ -4,7 +4,7 @@ const request = require("supertest");
 const {
 	setupMemoryServer,
 	tearDownMemoryServer
-} = require("../utils/test-utils");
+} = require("../utils/testUtils");
 
 beforeAll(setupMemoryServer);
 afterAll(tearDownMemoryServer);
