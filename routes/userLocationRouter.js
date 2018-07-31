@@ -3,30 +3,14 @@ const userLocationsRouter = express.Router()
 
 const GlobalLocation = require('../models/GlobalLocation');
 const UserLocation = require('../models/UserLocation');
+const { getLocationsHandler, postLocationsHandler } = require('../middlewares/userLocationRouterHelper')
 
 userLocationsRouter.use(express.json())
 
-userLocationsRouter.get('/:id', (req, res, next) => { res.json({ message: "Hello from userLocations Router!" }) })
+// Get needs to show a list of user locations - still yet to be done
+userLocationsRouter.get('/:id', getLocationsHandler)
 
-userLocationsRouter.post('/:id', async (req, res, next) => {
-    const globalLocation = new GlobalLocation({
-        lat: req.body.lat,
-        lng: req.body.lng,
-        geocodedLocationName: req.body.geocodedLocationName,
-    });
-    const savedGlobalLocation = await globalLocation.save()
-
-    const userLocation = new UserLocation({
-        userId: req.params.id,
-        globalLocation: savedGlobalLocation._id,
-        isPublic: req.body.isPublic,
-        locationName: req.body.locationName,
-    })
-
-    await userLocation.save()
-
-    res.json({ message: "Location created" })
-})
+userLocationsRouter.post('/:id', postLocationsHandler )
 
 module.exports = (app) => {
     app.use('/locations/user', userLocationsRouter)
