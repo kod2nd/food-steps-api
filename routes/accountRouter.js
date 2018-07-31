@@ -19,6 +19,13 @@ accountRouter.post(
 			username,
 			email
         });
+
+        const isPasswordValid = newUser.validatePassword(password);
+        const error = {
+            name:"ValidationError",
+            message:"Password is invalid"
+        }
+        if(!isPasswordValid) return next(error);
 		newUser.setHashedPassword(password);
 		await newUser.save();
 		res.status(201).json({ message: "User created successfully" });
