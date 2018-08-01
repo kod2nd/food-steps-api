@@ -9,11 +9,10 @@ app.use(logger("dev"));
 app.use(express.json());
 app.use(cookieParser());
 
-
 // Routes
-const indexRouter = require('./routes/index')
-const accountRouter = require('./routes/accountRouter')
-const userLocationRouter = require('./routes/userLocationRouter')
+const indexRouter = require("./routes/indexRouter");
+const accountRouter = require("./routes/accountRouter");
+const userLocationRouter = require("./routes/userLocationRouter");
 
 indexRouter(app);
 accountRouter(app);
