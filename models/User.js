@@ -40,19 +40,6 @@ userSchema.methods.verifyPassword = function(password) {
   return this.hash === hashPassword(password, this.salt);
 };
 
-// userSchema.methods.toDisplay = function() {
-// 	let smallObject = {
-// 		_id: this._id,
-// 		username: this.username,
-// 		bio: this.bio,
-// 		likes: this.likes,
-// 		bookmarked: this.bookmarked,
-// 		createdAt: this.createdAt,
-// 		updatedAt: this.updatedAt
-// 	};
-// 	return smallObject;
-// };
-
 const generateSalt = () => {
   return crypto.randomBytes(16).toString("hex");
 };
