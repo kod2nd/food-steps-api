@@ -80,8 +80,8 @@ test('POST /locations/user/:id for newly created userLocation should have isPubl
     expect(response.status).toBe(201);
     expect(response.body.message).toEqual('Location created');
 
-    const userLocations = await UserLocation.find({ userId: userId });
-    expect(userLocations[0].isPublic).toBe(false);
+    const userLocations = await UserLocation.findOne({ userId: userId });
+    expect(userLocations.isPublic).toBe(false);
 });
 
 test.skip('POST /locations/user/:id Should not add to globalLocation if, the global location already contains the same lat and lng.', async () => {
