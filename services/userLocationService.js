@@ -1,20 +1,20 @@
 const GlobalLocation = require("../models/GlobalLocation");
 const UserLocation = require("../models/UserLocation");
 
-const sayHello = (req, res, next) => {
-  res.json({
-    message: "Hello from userLocations Router!"
-  });
-};
+// Helper functions
+const getExistingUserLocations = async (userId) => {
+  const userExistingLocations = await UserLocation.find({ userId }).populate('globalLocation');
+  return userExistingLocations
+}
 
 const isUserLocationExists = async (userId, lat, lng) => {
-  const userExistingLocations = await UserLocation.find({ userId }).populate('globalLocation');
+  const userExistingLocations = await getExistingUserLocations(userId)
+
   const index = userExistingLocations.findIndex(location => {
     return Number(location.globalLocation.lat) === lat && Number(location.globalLocation.lng) === lng
   })
   return index !== -1
 }
-
 
 const getGlobalLocationIdIfExists = async (lat, lng) => {
   const location = await GlobalLocation.findOne({ lat, lng });
@@ -30,6 +30,15 @@ const createGlobalLocation = async (lat, lng, geocodedLocationName) => {
   const savedGlobalLocation = await globalLocation.save();
   return savedGlobalLocation._id;
 };
+
+// Services
+const displayAllUserLocations = async (req, res, next) => {
+  const userId = req.params.id
+  const existingUserLocations = await getExistingUserLocations(userId)
+
+  res.json(existingUserLocations);
+};
+
 
 const createUserLocation = async (req, res, next) => {
   const userId = req.params.id
@@ -59,6 +68,6 @@ const createUserLocation = async (req, res, next) => {
 };
 
 module.exports = {
-  sayHello,
+  displayAllUserLocations,
   createUserLocation
 };

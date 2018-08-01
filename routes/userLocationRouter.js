@@ -7,7 +7,7 @@ const handleAsyncError = require("../utils/handleAsyncError");
 userLocationsRouter.use(express.json());
 
 // Get needs to show a list of user locations - still yet to be done
-userLocationsRouter.get("/:id", handleAsyncError(userLocationService.sayHello));
+userLocationsRouter.get("/:id", handleAsyncError(userLocationService.displayAllUserLocations));
 
 userLocationsRouter.post(
   "/:id",

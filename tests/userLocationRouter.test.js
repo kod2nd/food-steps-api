@@ -59,10 +59,13 @@ beforeEach(async () => {
     userId = await signupUserAndReturnSavedId("testUser", "12345678");
 });
 
-test("GET /locations/user/:id should return proper message from userLocations router", async () => {
-    const response = await request(app).get("/locations/user/1");
+test("GET /locations/user/:id should return an array of 2 location objects when the total number of existing userLocations for a particular user is 2", async () => {
+    await addLocationForUser(userId, location1)
+    await addLocationForUser(userId, {lat: 100, lng: 1.0242})
+
+    const response = await request(app).get(`/locations/user/${userId}`);
     expect(response.status).toBe(200);
-    expect(response.body.message).toBe("Hello from userLocations Router!");
+    expect(response.body.length).toEqual(2);
 });
 
 test("POST /locations/user/:id for new global location should create both userLocation and globalLocation ", async () => {
