@@ -7,10 +7,20 @@ const sayHello = (req, res, next) => {
   });
 };
 
-const getGlobalLocationIdIfExist = async (lat, lng) => {
+const isUserLocationExists = async (userId, lat, lng) => {
+  const userExistingLocations = await UserLocation.find({ userId }).populate('globalLocation');
+  const index = userExistingLocations.findIndex(location => {
+    return Number(location.globalLocation.lat) === lat && Number(location.globalLocation.lng) === lng
+  })
+  return index !== -1
+}
+
+
+const getGlobalLocationIdIfExists = async (lat, lng) => {
   const location = await GlobalLocation.findOne({ lat, lng });
   return location ? location._id : undefined;
 };
+
 const createGlobalLocation = async (lat, lng, geocodedLocationName) => {
   const globalLocation = new GlobalLocation({
     lat,
@@ -22,25 +32,30 @@ const createGlobalLocation = async (lat, lng, geocodedLocationName) => {
 };
 
 const createUserLocation = async (req, res, next) => {
+  const userId = req.params.id
   const lat = req.body.lat;
   const lng = req.body.lng;
   const geocodedName = req.body.geocodedLocationName;
-  let globalLocationId = await getGlobalLocationIdIfExist(lat, lng);
+
+  let globalLocationId = await getGlobalLocationIdIfExists(lat, lng);
 
   if (!globalLocationId) {
     globalLocationId = await createGlobalLocation(lat, lng, geocodedName);
   }
 
-  const userLocation = new UserLocation({
-    userId: req.params.id,
-    globalLocation: globalLocationId,
-    isPublic: req.body.isPublic,
-    locationName: req.body.locationName
-  });
+  const userLocationExists = await isUserLocationExists(userId, lat, lng)
 
-  await userLocation.save();
+  if (!userLocationExists) {
+    const userLocation = new UserLocation({
+      userId: req.params.id,
+      globalLocation: globalLocationId,
+      isPublic: req.body.isPublic,
+      locationName: req.body.locationName
+    });
 
-  res.status(201).json({ message: "Location created" });
+    await userLocation.save();
+    res.status(201).json({ message: "Location created" });
+  } else res.status(400).json({ message: "Location already exists in your UserLocations" })
 };
 
 module.exports = {
