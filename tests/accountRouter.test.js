@@ -11,6 +11,12 @@ beforeAll(setupMemoryServer);
 afterAll(tearDownMemoryServer);
 beforeEach(resetMemoryServer);
 
+const getSignupResponse = async (user) => {
+  return await request(app)
+.post("/account/signup")
+.send(user);
+}
+
 it("get /account should return welcome message", async () => {
   const response = await request(app).get("/account");
   expect(response.status).toBe(200);
@@ -24,9 +30,7 @@ describe("POST /account/signup", () => {
       password: "12345678",
       email: "abc@abc.com"
     };
-    const response = await request(app)
-      .post("/account/signup")
-      .send(newUser);
+    const response = await getSignupResponse(newUser)
     expect(response.status).toBe(201);
     const userCreated = await User.findOne({ username: "user12" });
     expect(userCreated.username).toBe("user12");
@@ -46,15 +50,9 @@ describe("POST /account/signup", () => {
       password: "123456",
       email: "abc@abc.com"
     };
-
-    let response = await request(app)
-      .post("/account/signup")
-      .send(badUser1);
+    let response = await getSignupResponse(badUser1)
     expect(response.status).toBe(400);
-
-    response = await request(app)
-      .post("/account/signup")
-      .send(badUser2);
+    response = await getSignupResponse(badUser2)
     expect(response.status).toBe(400);
   });
 
@@ -73,14 +71,10 @@ describe("POST /account/signup", () => {
       email: "abc@abc.com"
     };
 
-    let response = await request(app)
-      .post("/account/signup")
-      .send(badUser1);
+    let response = await getSignupResponse(badUser1)
     expect(response.status).toBe(400);
 
-    response = await request(app)
-      .post("/account/signup")
-      .send(badUser2);
+    response = await getSignupResponse(badUser2)
     expect(response.status).toBe(400);
   });
 
@@ -99,20 +93,12 @@ describe("POST /account/signup", () => {
       username: "janeee",
       password: "12345678"
     };
-
-    let response = await request(app)
-      .post("/account/signup")
-      .send(badUser1);
+    
+    let response = await getSignupResponse(badUser1)
     expect(response.status).toBe(400);
-
-    response = await request(app)
-      .post("/account/signup")
-      .send(badUser2);
-    expect(response.status).toBe(400);
-
-    response = await request(app)
-      .post("/account/signup")
-      .send(badUser3);
+    response = await getSignupResponse(badUser2)
+    expect(response.status).toBe(400)
+    response = await getSignupResponse(badUser3)
     expect(response.status).toBe(400);
   });
 });
