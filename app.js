@@ -1,10 +1,14 @@
 const express = require("express");
 const logger = require("morgan");
+const cookieParser = require("cookie-parser");
+
 const app = express();
 require("dotenv").config();
 
 app.use(logger("dev"));
 app.use(express.json());
+app.use(cookieParser());
+
 
 // Routes
 const indexRouter = require('./routes/index')
