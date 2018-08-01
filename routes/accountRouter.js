@@ -3,7 +3,10 @@ const errorHandler = require("../middlewares/error-handler");
 const User = require("../models/User");
 const { jwtOptions } = require("../config/passport");
 const handleAsyncError = require("../utils/handleAsyncError");
-const { getValidationError } = require("../utils/getCustomErrors");
+const {
+  getValidationError,
+  getUnauthorisedError
+} = require("../utils/getCustomErrors");
 const jwt = require("jsonwebtoken");
 
 const accountRouter = express.Router();
@@ -43,23 +46,22 @@ accountRouter.post(
   })
 );
 
-accountRouter.post("/signin", async (req, res) => {
+accountRouter.post("/signin", async (req, res, next) => {
   const { username, password } = req.body;
   const user = await User.findOne({ username: username });
-  if (!user) {
-    return res.status(401).json({ message: "no such user found" }); // TODO
-  }
-  if (user.verifyPassword(password)) {
-    const userId = { id: user._id };
-    const token = jwt.sign(userId, jwtOptions.secretOrKey);
 
-    res.cookie("jwt", token, {
-      httpOnly: true
-    });
-    res.status(200).json({ message: "ok" });
-  } else {
-    res.status(401).json({ message: "passwords did not match" });
-  }
+  if (!user) return next(getUnauthorisedError("No such user found"));
+
+  if (!user.verifyPassword(password))
+    return next(getUnauthorisedError("Passwords did not match"));
+
+  const userId = { id: user._id };
+  const token = jwt.sign(userId, jwtOptions.secretOrKey);
+
+  res.cookie("jwt", token, {
+    httpOnly: true
+  });
+  res.status(200).json({ message: "ok" });
 });
 
 module.exports = app => {
