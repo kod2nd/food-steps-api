@@ -1,33 +1,49 @@
-const GlobalLocation = require('../models/GlobalLocation');
-const UserLocation = require('../models/UserLocation');
+const GlobalLocation = require("../models/GlobalLocation");
+const UserLocation = require("../models/UserLocation");
 
-const getLocationsHandler = (req, res, next) => {
-    res.json({
-        message: "Hello from userLocations Router!",
-    })
-}
+const sayHello = (req, res, next) => {
+  res.json({
+    message: "Hello from userLocations Router!"
+  });
+};
 
-const postLocationsHandler = async (req, res, next) => {
-    const globalLocation = new GlobalLocation({
-        lat: req.body.lat,
-        lng: req.body.lng,
-        geocodedLocationName: req.body.geocodedLocationName,
-    });
-    const savedGlobalLocation = await globalLocation.save()
+const getGlobalLocationIdIfExist = async (lat, lng) => {
+  const location = await GlobalLocation.findOne({ lat, lng });
+  return location ? location._id : undefined;
+};
+const createGlobalLocation = async (lat, lng, geocodedLocationName) => {
+  const globalLocation = new GlobalLocation({
+    lat,
+    lng,
+    geocodedLocationName
+  });
+  const savedGlobalLocation = await globalLocation.save();
+  return savedGlobalLocation._id;
+};
 
-    const userLocation = new UserLocation({
-        userId: req.params.id,
-        globalLocation: savedGlobalLocation._id,
-        isPublic: req.body.isPublic,
-        locationName: req.body.locationName,
-    })
+const createUserLocation = async (req, res, next) => {
+  const lat = req.body.lat;
+  const lng = req.body.lng;
+  const geocodedName = req.body.geocodedLocationName;
+  let globalLocationId = await getGlobalLocationIdIfExist(lat, lng);
 
-    await userLocation.save()
+  if (!globalLocationId) {
+    globalLocationId = await createGlobalLocation(lat, lng, geocodedName);
+  }
 
-    res.status(201).json({ message: "Location created" })
-}
+  const userLocation = new UserLocation({
+    userId: req.params.id,
+    globalLocation: globalLocationId,
+    isPublic: req.body.isPublic,
+    locationName: req.body.locationName
+  });
+
+  await userLocation.save();
+
+  res.status(201).json({ message: "Location created" });
+};
 
 module.exports = {
-    getLocationsHandler,
-    postLocationsHandler
-}
+  sayHello,
+  createUserLocation
+};
