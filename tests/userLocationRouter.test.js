@@ -39,22 +39,20 @@ const inputTestPublicLocation = (lat, lng) => {
   return { ...privatelocation, isPublic: true };
 };
 
-const addLocationFromDiffUser = async () => {
-  const userThatAddsLocation = await signupUserAndReturnSavedId(
-    "addlocation",
-    "12345678"
-  );
+const location1 = {
+  lat: 1.2828,
+  lng: 103.8304
+};
+const addLocationForUser = async (userId, location) => {
   await request(app)
-    .post(`/locations/user/${userThatAddsLocation}`)
-    .send(inputTestLocation(1.2828, 103.8304));
+    .post(`/locations/user/${userId}`)
+    .send(inputTestLocation(location.lat, location.lng));
 };
 
 beforeAll(setupMemoryServer);
 afterAll(tearDownMemoryServer);
 
 let userId;
-let lat = 1.2828;
-let lng = 103.8304;
 
 beforeEach(async () => {
   resetMemoryServer();
@@ -70,7 +68,7 @@ test("GET /locations/user/:id should return proper message from userLocations ro
 test("POST /locations/user/:id for new global location should create both userLocation and globalLocation ", async () => {
   const response = await request(app)
     .post(`/locations/user/${userId}`)
-    .send(inputTestLocation(1.2828, 103.8304));
+    .send(inputTestLocation(location1.lat, location1.lng));
   expect(response.status).toBe(201);
   expect(response.body.message).toEqual("Location created");
 
@@ -85,19 +83,19 @@ test("POST /locations/user/:id for new global location should create both userLo
 
 test('POST /locations/user/:id should create a user location with isPublic defaulted to "false" if it is not supplied in the request body', async () => {
   const response = await request(app)
-  .post(`/locations/user/${userId}`)
-  .send(inputTestLocation(lat, lng));
+    .post(`/locations/user/${userId}`)
+    .send(inputTestLocation(location1.lat, location1.lng));
   expect(response.status).toBe(201);
   expect(response.body.message).toEqual("Location created");
-  
+
   const userLocations = await UserLocation.findOne({ userId: userId });
   expect(userLocations.isPublic).toBe(false);
 });
 
-test('POST /locations/user/:id if user flags isPublic to be true', async () => {
+test("POST /locations/user/:id if user flags isPublic to be true", async () => {
   const response = await request(app)
     .post(`/locations/user/${userId}`)
-    .send(inputTestPublicLocation(lat, lng));
+    .send(inputTestPublicLocation(location1.lat, location1.lng));
   expect(response.status).toBe(201);
   expect(response.body.message).toEqual("Location created");
 
@@ -105,8 +103,12 @@ test('POST /locations/user/:id if user flags isPublic to be true', async () => {
   expect(userLocations.isPublic).toBe(true);
 });
 
-test("POST /locations/user/:id Should not add to globalLocation if, the global location already contains the same lat and lng.", async () => {
-  await addLocationFromDiffUser();
+test("POST /locations/user/:id Should not add to globalLocation if, the global location already contains the same location1.lat and location1.lng.", async () => {
+  const lat = location1.lat;
+  const lng = location1.lng;
+
+  const anotherUserId = await signupUserAndReturnSavedId("differentUser", "12345678");
+  await addLocationForUser(anotherUserId, location1);
 
   await request(app)
     .post(`/locations/user/${userId}`)
@@ -114,4 +116,18 @@ test("POST /locations/user/:id Should not add to globalLocation if, the global l
 
   const globalLocation = await GlobalLocation.find({ lat, lng });
   expect(globalLocation.length).toEqual(1);
+});
+
+test.skip("POST /locations/user/:id should not add to a new UserLocation if user already have existing location entry", async () => {
+  await addLocationForUser(userId, location1);
+  const lat = location1.lat;
+  const lng = location1.lng;
+
+  await request(app)
+    .post(`/locations/user/${userId}`)
+    .send(inputTestPublicLocation(lat, lng));
+
+  const userLocation = await UserLocation.find({ userId }).populate('globalLocation');
+  console.log(userLocation);
+  expect(userLocation.length).toEqual(1);
 });
