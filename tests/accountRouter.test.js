@@ -84,4 +84,35 @@ describe("POST /account/signup", () => {
     expect(response.status).toBe(400);
   });
 
+  it("should not be able to sign up when username/password/email is not supplied ", async () => {
+    const badUser1 = {
+      password: "12345678",
+      email: "abc@abc.com"
+    };
+
+    const badUser2 = {
+      username: "janeee",
+      email: "abc@abc.com"
+    };
+
+    const badUser3 = {
+      username: "janeee",
+      password: "12345678"
+    };
+
+    let response = await request(app)
+      .post("/account/signup")
+      .send(badUser1);
+    expect(response.status).toBe(400);
+
+    response = await request(app)
+      .post("/account/signup")
+      .send(badUser2);
+    expect(response.status).toBe(400);
+
+    response = await request(app)
+      .post("/account/signup")
+      .send(badUser3);
+    expect(response.status).toBe(400);
+  });
 });
