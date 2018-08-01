@@ -101,4 +101,5 @@ describe("POST /account/signup", () => {
     response = await getSignupResponse(badUser3)
     expect(response.status).toBe(400);
   });
+  
 });
