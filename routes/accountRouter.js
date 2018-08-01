@@ -22,16 +22,20 @@ accountRouter.post(
       email
     });
 
+    // Validating and Verifying password
     if (!password) return next(getValidationError("Password is missing"));
-
     const isPasswordValid = newUserModel.validatePassword(password);
     if (!isPasswordValid)
       return next(getValidationError("Password is invalid"));
 
+    // Saving
     newUserModel.setHashedPassword(password);
     const newUser = await newUserModel.save();
+
+    // Generating JWT
     const userId = { id: newUser._id };
     const token = jwt.sign(userId, jwtOptions.secretOrKey);
+
     res.cookie("jwt", token, {
       httpOnly: true
     });
@@ -43,14 +47,16 @@ accountRouter.post("/signin", async (req, res) => {
   const { username, password } = req.body;
   const user = await User.findOne({ username: username });
   if (!user) {
-    res.status(401).json({ message: "no such user found" });
+    return res.status(401).json({ message: "no such user found" }); // TODO
   }
   if (user.verifyPassword(password)) {
-    console.log(user)
     const userId = { id: user._id };
     const token = jwt.sign(userId, jwtOptions.secretOrKey);
-    res.status(200).json({ message: "ok", token: token });
 
+    res.cookie("jwt", token, {
+      httpOnly: true
+    });
+    res.status(200).json({ message: "ok" });
   } else {
     res.status(401).json({ message: "passwords did not match" });
   }
