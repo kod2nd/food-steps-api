@@ -11,11 +11,11 @@ beforeAll(setupMemoryServer);
 afterAll(tearDownMemoryServer);
 beforeEach(resetMemoryServer);
 
-const getSignupResponse = async (user) => {
+const getSignupResponse = async user => {
   return await request(app)
-.post("/account/signup")
-.send(user);
-}
+    .post("/account/signup")
+    .send(user);
+};
 
 it("get /account should return welcome message", async () => {
   const response = await request(app).get("/account");
@@ -24,16 +24,20 @@ it("get /account should return welcome message", async () => {
 });
 
 describe("POST /account/signup", () => {
-  it("should be able to sign up when valid body is posted", async () => {
+  it("should be able to sign up when valid body is posted and receive jwt in cookies", async () => {
     const newUser = {
       username: "user12",
       password: "12345678",
       email: "abc@abc.com"
     };
-    const response = await getSignupResponse(newUser)
+    const response = await getSignupResponse(newUser);
     expect(response.status).toBe(201);
+
     const userCreated = await User.findOne({ username: "user12" });
     expect(userCreated.username).toBe("user12");
+    
+    const cookies = response.headers["set-cookie"];
+    expect(cookies).toBeDefined();
   });
 
   it("should not be able to sign up when username is not between 6 to 20 characters", async () => {
@@ -50,9 +54,9 @@ describe("POST /account/signup", () => {
       password: "123456",
       email: "abc@abc.com"
     };
-    let response = await getSignupResponse(badUser1)
+    let response = await getSignupResponse(badUser1);
     expect(response.status).toBe(400);
-    response = await getSignupResponse(badUser2)
+    response = await getSignupResponse(badUser2);
     expect(response.status).toBe(400);
   });
 
@@ -71,10 +75,10 @@ describe("POST /account/signup", () => {
       email: "abc@abc.com"
     };
 
-    let response = await getSignupResponse(badUser1)
+    let response = await getSignupResponse(badUser1);
     expect(response.status).toBe(400);
 
-    response = await getSignupResponse(badUser2)
+    response = await getSignupResponse(badUser2);
     expect(response.status).toBe(400);
   });
 
@@ -93,13 +97,12 @@ describe("POST /account/signup", () => {
       username: "janeee",
       password: "12345678"
     };
-    
-    let response = await getSignupResponse(badUser1)
+
+    let response = await getSignupResponse(badUser1);
     expect(response.status).toBe(400);
-    response = await getSignupResponse(badUser2)
-    expect(response.status).toBe(400)
-    response = await getSignupResponse(badUser3)
+    response = await getSignupResponse(badUser2);
     expect(response.status).toBe(400);
-  });
-  
+    response = await getSignupResponse(badUser3);
+    expect(response.status).toBe(400);
+  });    
 });
