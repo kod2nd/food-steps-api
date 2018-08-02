@@ -4,6 +4,7 @@ const { passport } = require("../config/passport");
 
 const userLocationService = require("../services/userLocationService");
 const handleAsyncError = require("../utils/handleAsyncError");
+const errorHandler = require("../middlewares/error-handler");
 
 userLocationsRouter.use(express.json());
 
@@ -20,5 +21,5 @@ userLocationsRouter.post(
 );
 
 module.exports = app => {
-  app.use("/locations/user", userLocationsRouter);
+  app.use("/locations/user", userLocationsRouter, errorHandler);
 };

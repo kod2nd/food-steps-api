@@ -181,4 +181,21 @@ describe("POST /locations/user/:id", () => {
       expect(userLocation.length).toEqual(1);
     });
   });
+
+  describe("when data is not valid", () => {
+    const agent = request.agent(app);
+
+    beforeEach(async () => {
+      await agent.post("/account/signin").send(testUser);
+    });
+
+    it("should respond with a Bad Request status", async () => {
+      const response = await addLocationForUser(agent, {
+        lng: 103.123,
+        geocodedLocationName: "Test Location",
+        locationName: "User Given name for Test Location"
+      });
+      expect(response.status).toBe(400);
+    });
+  });
 });
