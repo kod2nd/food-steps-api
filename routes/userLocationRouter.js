@@ -14,7 +14,7 @@ userLocationsRouter.get(
 );
 
 userLocationsRouter.post(
-  "/:id",
+  "/",
   passport.authenticate("jwt", { session: false }),
   handleAsyncError(userLocationService.createUserLocation)
 );

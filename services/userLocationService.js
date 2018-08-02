@@ -11,7 +11,7 @@ const displayAllUserLocations = async (req, res, next) => {
 };
 
 const createUserLocation = async (req, res, next) => {
-  const userId = req.params.id
+  const userId = req.user._id;
   const lat = req.body.lat;
   const lng = req.body.lng;
   const geocodedName = req.body.geocodedLocationName;
@@ -26,7 +26,7 @@ const createUserLocation = async (req, res, next) => {
 
   if (!userLocationExists) {
     const userLocation = new UserLocation({
-      userId: req.params.id,
+      userId,
       globalLocation: globalLocationId,
       isPublic: req.body.isPublic,
       locationName: req.body.locationName
