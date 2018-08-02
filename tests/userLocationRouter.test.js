@@ -11,16 +11,19 @@ const {
 } = require("../utils/testUtils");
 
 // To Move to testUtils later
-const signupUserAndReturnSavedId = async (username, password) => {
-  const newUser = {
-    username,
-    password,
-    email: "abc@abc.com"
-  };
+const testUser = {
+  username: "testUser",
+  password: "12345678",
+  email: "abc@abc.com"
+};
+
+const signupUserAndReturnSavedId = async user => {
   const response = await request(app)
     .post("/account/signup")
-    .send(newUser);
+    .send(user);
   expect(response.status).toBe(201);
+
+  const { username } = user;
   const userCreated = await User.findOne({ username });
   return userCreated._id;
 };
@@ -43,12 +46,14 @@ const location1 = {
   lat: 1.2828,
   lng: 103.8304
 };
+
 const location2 = {
   lat: 1.3112,
   lng: 103.795
 };
-const addLocationForUser = async (userId, location) => {
-  await request(app)
+
+const addLocationForUser = async (agent, userId, location) => {
+  await agent
     .post(`/locations/user/${userId}`)
     .send(inputTestLocation(location.lat, location.lng));
 };
@@ -60,97 +65,134 @@ let userId;
 
 beforeEach(async () => {
   resetMemoryServer();
-  userId = await signupUserAndReturnSavedId("testUser", "12345678");
+  userId = await signupUserAndReturnSavedId(testUser);
 });
 
 test("GET /locations/user/:id should return an array of 2 location objects when the total number of existing userLocations for a particular user is 2", async () => {
-  await addLocationForUser(userId, location1);
-  await addLocationForUser(userId, { lat: 100, lng: 1.0242 });
+  const agent = request.agent(app);
+  await agent.post("/account/signin").send(testUser);
+  await addLocationForUser(agent, userId, location1);
+  await addLocationForUser(agent, userId, { lat: 100, lng: 1.0242 });
 
   const response = await request(app).get(`/locations/user/${userId}`);
   expect(response.status).toBe(200);
   expect(response.body.length).toEqual(2);
 });
 
-test("POST /locations/user/:id for new global location should create both userLocation and globalLocation ", async () => {
-  const response = await request(app)
-    .post(`/locations/user/${userId}`)
-    .send(inputTestLocation(location1.lat, location1.lng));
-  expect(response.status).toBe(201);
-  expect(response.body.message).toEqual("Location created");
+describe("POST /locations/user/:id", () => {
+  describe("when the user is not logged in", () => {
+    it("responds with a 401 status", async () => {
+      const response = await request(app)
+        .post(`/locations/user/${userId}`)
+        .send(inputTestLocation(location1.lat, location1.lng));
 
-  const userLocations = await UserLocation.find({ userId: userId });
-  expect(userLocations.length).toBe(1);
+      expect(response.status).toBe(401);
+    });
 
-  const globalLocation = await GlobalLocation.findById(
-    userLocations[0].globalLocation
-  );
-  expect(globalLocation.geocodedLocationName).toBeDefined();
-});
+    it("does not create the location", async () => {
+      await request(app)
+        .post(`/locations/user/${userId}`)
+        .send(inputTestLocation(location1.lat, location1.lng));
 
-test('POST /locations/user/:id should create a user location with isPublic defaulted to "false" if it is not supplied in the request body', async () => {
-  const response = await request(app)
-    .post(`/locations/user/${userId}`)
-    .send(inputTestLocation(location1.lat, location1.lng));
-  expect(response.status).toBe(201);
-  expect(response.body.message).toEqual("Location created");
+      const userLocations = await UserLocation.find();
+      expect(userLocations).toHaveLength(0);
 
-  const userLocations = await UserLocation.findOne({ userId: userId });
-  expect(userLocations.isPublic).toBe(false);
-});
+      const globalLocations = await GlobalLocation.find();
+      expect(globalLocations).toHaveLength(0);
+    });
+  });
 
-test("POST /locations/user/:id if user flags isPublic to be true", async () => {
-  const response = await request(app)
-    .post(`/locations/user/${userId}`)
-    .send(inputTestPublicLocation(location1.lat, location1.lng));
-  expect(response.status).toBe(201);
-  expect(response.body.message).toEqual("Location created");
+  describe("when the user is logged in", () => {
+    const agent = request.agent(app);
 
-  const userLocations = await UserLocation.findOne({ userId: userId });
-  expect(userLocations.isPublic).toBe(true);
-});
+    beforeEach(async () => {
+      await agent.post("/account/signin").send(testUser);
+    });
 
-test("POST /locations/user/:id Should not add to globalLocation if, the global location already contains the same location1.lat and location1.lng.", async () => {
-  const lat = location1.lat;
-  const lng = location1.lng;
+    it("should create both userLocation and globalLocation for new global location", async () => {
+      const response = await agent
+        .post(`/locations/user/${userId}`)
+        .send(inputTestLocation(location1.lat, location1.lng));
 
-  const anotherUserId = await signupUserAndReturnSavedId(
-    "differentUser",
-    "12345678"
-  );
-  await addLocationForUser(anotherUserId, location1);
+      expect(response.status).toBe(201);
+      expect(response.body.message).toEqual("Location created");
 
-  await request(app)
-    .post(`/locations/user/${userId}`)
-    .send(inputTestPublicLocation(lat, lng));
+      const userLocations = await UserLocation.find({ userId: userId });
+      expect(userLocations.length).toBe(1);
 
-  const globalLocation = await GlobalLocation.find({ lat, lng });
-  expect(globalLocation.length).toEqual(1);
-});
+      const globalLocation = await GlobalLocation.findById(
+        userLocations[0].globalLocation
+      );
+      expect(globalLocation.geocodedLocationName).toBeDefined();
+    });
 
-test("POST /locations/user/:id should add to globalLocation if the global location does not contain the same location", async () => {
-  await addLocationForUser(userId, location1);
+    it('should create a user location with isPublic defaulted to "false" if it is not supplied in the request body', async () => {
+      const response = await agent
+        .post(`/locations/user/${userId}`)
+        .send(inputTestLocation(location1.lat, location1.lng));
+      expect(response.status).toBe(201);
+      expect(response.body.message).toEqual("Location created");
 
-  await addLocationForUser(userId, location2);
+      const userLocations = await UserLocation.findOne({ userId: userId });
+      expect(userLocations.isPublic).toBe(false);
+    });
 
-  const globalLocation = await GlobalLocation.find();
-  expect(globalLocation.length).toEqual(2);
-  expect(globalLocation).toContainEqual(expect.objectContaining(location1));
-  expect(globalLocation).toContainEqual(expect.objectContaining(location2));
-});
+    it("creates a location when user flags isPublic to be true", async () => {
+      const response = await agent
+        .post(`/locations/user/${userId}`)
+        .send(inputTestPublicLocation(location1.lat, location1.lng));
+      expect(response.status).toBe(201);
+      expect(response.body.message).toEqual("Location created");
 
-test("POST /locations/user/:id should not add to a new UserLocation if user already has an existing location entry", async () => {
-  await addLocationForUser(userId, location1);
-  const lat = location1.lat;
-  const lng = location1.lng;
+      const userLocations = await UserLocation.findOne({ userId: userId });
+      expect(userLocations.isPublic).toBe(true);
+    });
 
-  const response = await request(app)
-    .post(`/locations/user/${userId}`)
-    .send(inputTestPublicLocation(lat, lng));
-  expect(response.status).toBe(400);
+    // TODO fix once locations can only be created for the signed in user
+    it.skip("should not add to globalLocation if the same location already exists", async () => {
+      const lat = location1.lat;
+      const lng = location1.lng;
 
-  const userLocation = await UserLocation.find({ userId }).populate(
-    "globalLocation"
-  );
-  expect(userLocation.length).toEqual(1);
+      const anotherUserId = await signupUserAndReturnSavedId({
+        username: "differentUser",
+        password: "12345678",
+        email: "someone@example.com"
+      });
+      await addLocationForUser(agent, anotherUserId, location1);
+
+      await agent
+        .post(`/locations/user/${userId}`)
+        .send(inputTestPublicLocation(lat, lng));
+
+      const globalLocation = await GlobalLocation.find({ lat, lng });
+      expect(globalLocation.length).toEqual(1);
+    });
+
+    it("should add to globalLocation if the global location does not contain the same location", async () => {
+      await addLocationForUser(agent, userId, location1);
+
+      await addLocationForUser(agent, userId, location2);
+
+      const globalLocation = await GlobalLocation.find();
+      expect(globalLocation.length).toEqual(2);
+      expect(globalLocation).toContainEqual(expect.objectContaining(location1));
+      expect(globalLocation).toContainEqual(expect.objectContaining(location2));
+    });
+
+    it("should not add to a new UserLocation if user already has an existing location entry", async () => {
+      await addLocationForUser(agent, userId, location1);
+      const lat = location1.lat;
+      const lng = location1.lng;
+
+      const response = await agent
+        .post(`/locations/user/${userId}`)
+        .send(inputTestPublicLocation(lat, lng));
+      expect(response.status).toBe(400);
+
+      const userLocation = await UserLocation.find({ userId }).populate(
+        "globalLocation"
+      );
+      expect(userLocation.length).toEqual(1);
+    });
+  });
 });
