@@ -29,7 +29,8 @@ const schema = Schema({
     },
     isPublic: {type:Boolean, default: false},
     locationName: { type: String, required: true },
-    userRating: Number
+    userRating: Number,
+    userFeedback: [String]
 },
     { timestamps: true }
 
