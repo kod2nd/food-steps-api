@@ -6,7 +6,7 @@ const { getValidationError } = require("../utils/getCustomErrors");
 
 const displayAllUserLocations = async (req, res, next) => {
   const userId = req.user._id
-  const existingUserLocations = await getExistingUserLocations(userId)
+  const existingUserLocations = await helper.getExistingUserLocations(userId)
 
   res.json(existingUserLocations);
 };
