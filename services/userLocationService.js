@@ -39,7 +39,7 @@ const createUserLocation = async (req, res, next) => {
 
     await userLocation.save();
     res.status(201).json({ message: "Location created" });
-  } else res.status(400).json({ message: "Location already exists in your UserLocations" })
+  } else res.status(400).json({ message: "Location already exists in your locations" })
 };
 
 module.exports = {
