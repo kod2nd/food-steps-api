@@ -14,7 +14,7 @@ const displayAllUserLocations = async (req, res, next) => {
 const createUserLocation = async (req, res, next) => {
   const userId = req.user._id;
   const geocodedName = req.body.geocodedLocationName;
-  
+
   const lat = Number(req.body.lat);
   const lng = Number(req.body.lng);
   if (Number.isNaN(lat) || Number.isNaN(lng)) {
@@ -44,7 +44,25 @@ const createUserLocation = async (req, res, next) => {
   } else res.status(400).json({ message: "Location already exists in your locations" })
 };
 
+const updateUserLocation = async (req, res, next) => {
+  const locationId = req.params.locationId
+  const userLocation = await UserLocation.findById(locationId)
+  let userFeedback
+  if (req.body.userFeedback) {
+    userFeedback = [...userLocation.userFeedback, req.body.userFeedback]
+  } else userFeedback = [...userLocation.userFeedback]
+
+  await UserLocation.findByIdAndUpdate(locationId, {
+    locationName: req.body.locationName,
+    userRating: req.body.userRating,
+    userFeedback: userFeedback
+  });
+
+  res.status(200).json({ message: "Successful update!" })
+}
+
 module.exports = {
   displayAllUserLocations,
-  createUserLocation
+  createUserLocation,
+  updateUserLocation
 };

@@ -60,6 +60,7 @@ const addLocationForUser = async (agent, location, isPublic = false) => {
   return await agent.post(`/locations/user`).send(requestBody);
 };
 
+
 beforeAll(setupMemoryServer);
 afterAll(tearDownMemoryServer);
 
@@ -187,6 +188,36 @@ describe("POST /locations/user/:id", () => {
       expect(userLocation.length).toEqual(1);
     });
   });
+
+  describe("POST/locations/user/:id", () => {
+    // Feels like this agent and beforeEach is repeated. Should refactor.
+    const agent = request.agent(app);
+
+    beforeEach(async () => {
+      await agent.post("/account/signin").send(testUser);
+    });
+    it('should update a user location based on the request body', async () => {
+      const agent = request.agent(app);
+      await agent.post("/account/signin").send(testUser);
+      await addLocationForUser(agent, location1);
+      const userLocation = await UserLocation.find({ userId })
+      const locationToUpdate = userLocation[0]
+
+      const response = await agent.put(`/locations/user/${locationToUpdate._id}`).send(
+        {
+          locationName: "updated name",
+          userRating: 5,
+          userFeedback: "updated food is good!"
+        })
+
+      const updatedUserLocation = await UserLocation.findById(locationToUpdate._id)
+      
+      expect(response.status).toBe(200)
+      expect(updatedUserLocation.locationName).toBe("updated name")
+      expect(updatedUserLocation.userRating).toEqual(5)
+      expect(updatedUserLocation.userFeedback).toContain("updated food is good!")
+    });
+  })
 
   describe("when data is not valid", () => {
     const agent = request.agent(app);

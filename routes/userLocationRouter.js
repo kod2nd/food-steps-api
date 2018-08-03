@@ -21,6 +21,11 @@ userLocationsRouter.post(
   handleAsyncError(userLocationService.createUserLocation)
 );
 
+userLocationsRouter.put(
+    "/:locationId", passport.authenticate("jwt", { session: false }),
+    handleAsyncError(userLocationService.updateUserLocation)
+)
+
 module.exports = app => {
   app.use("/locations/user", userLocationsRouter, errorHandler);
 };
