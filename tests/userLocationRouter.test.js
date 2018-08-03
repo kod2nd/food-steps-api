@@ -66,6 +66,11 @@ const addLocationForUser = async (agent, location, isPublic = false) => {
   return await agent.post(`/locations/user`).send(requestBody);
 };
 
+const findLocationToUpdate = async (userId) => {
+  const userLocation = await UserLocation.find({ userId })
+  return userLocation[0]
+}
+
 
 beforeAll(setupMemoryServer);
 afterAll(tearDownMemoryServer);
@@ -201,23 +206,26 @@ describe("POST /locations/user/:id", () => {
 
     beforeEach(async () => {
       await agent.post("/account/signin").send(testUser);
+      await agent.post("/account/signin").send(testUser);
+      await addLocationForUser(agent, location1);
     });
 
     it('should update a user location based on the request body', async () => {
-      const agent = request.agent(app);
-      await agent.post("/account/signin").send(testUser);
-      await addLocationForUser(agent, location1);
-      const userLocation = await UserLocation.find({ userId })
-      const locationToUpdate = userLocation[0]
+      const locationToUpdate = await findLocationToUpdate(userId)
 
       const response = await agent.put(`/locations/user/${locationToUpdate._id}`).send(userLocationUpdate)
       expect(response.status).toBe(200)
 
       const updatedUserLocation = await UserLocation.findById(locationToUpdate._id)
-      
+
       expect(updatedUserLocation.locationName).toBe(userLocationUpdate.locationName)
       expect(updatedUserLocation.userRating).toEqual(userLocationUpdate.userRating)
       expect(updatedUserLocation.userFeedback).toContain(userLocationUpdate.userFeedback)
+    });
+    test('should not be accessable to a user, if that use is not logged in. Return status 401. ', async () => {
+      const locationToUpdate = await findLocationToUpdate(userId)
+      const response = await request(app).put(`/locations/user/${locationToUpdate._id}`)
+      expect(response.status).toBe(401)
     });
   })
 
