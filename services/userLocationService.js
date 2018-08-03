@@ -1,28 +1,33 @@
 const GlobalLocation = require("../models/GlobalLocation");
 const UserLocation = require("../models/UserLocation");
-const {getExistingUserLocations, isUserLocationExists, getGlobalLocationIdIfExists, createGlobalLocation} = require("./serviceHelper/userLocationHelper")
+const helper = require("./serviceHelper/userLocationHelper");
 
+const { getValidationError } = require("../utils/getCustomErrors");
 
 const displayAllUserLocations = async (req, res, next) => {
   const userId = req.params.id
-  const existingUserLocations = await getExistingUserLocations(userId)
+  const existingUserLocations = await helper.getExistingUserLocations(userId)
 
   res.json(existingUserLocations);
 };
 
 const createUserLocation = async (req, res, next) => {
   const userId = req.user._id;
-  const lat = req.body.lat;
-  const lng = req.body.lng;
   const geocodedName = req.body.geocodedLocationName;
-
-  let globalLocationId = await getGlobalLocationIdIfExists(lat, lng);
-
-  if (!globalLocationId) {
-    globalLocationId = await createGlobalLocation(lat, lng, geocodedName);
+  
+  const lat = Number(req.body.lat);
+  const lng = Number(req.body.lng);
+  if (Number.isNaN(lat) || Number.isNaN(lng)) {
+    return next(getValidationError(`Invalid lat/lng [${lat}, ${lng}]`));
   }
 
-  const userLocationExists = await isUserLocationExists(userId, lat, lng)
+  let globalLocationId = await helper.getGlobalLocationIdIfExists(lat, lng);
+
+  if (!globalLocationId) {
+    globalLocationId = await helper.createGlobalLocation(lat, lng, geocodedName);
+  }
+
+  const userLocationExists = await helper.isUserLocationExists(userId, lat, lng)
 
   if (!userLocationExists) {
     const userLocation = new UserLocation({
