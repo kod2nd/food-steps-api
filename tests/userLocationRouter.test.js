@@ -17,6 +17,12 @@ const testUser = {
   email: "abc@abc.com"
 };
 
+const userLocationUpdate = {
+  locationName: "updated name",
+  userRating: 5,
+  userFeedback: "updated food is good!"
+}
+
 const signupUserAndReturnSavedId = async user => {
   const response = await request(app)
     .post("/account/signup")
@@ -189,13 +195,14 @@ describe("POST /locations/user/:id", () => {
     });
   });
 
-  describe("POST/locations/user/:id", () => {
+  describe("PUT/locations/user/:id", () => {
     // Feels like this agent and beforeEach is repeated. Should refactor.
     const agent = request.agent(app);
 
     beforeEach(async () => {
       await agent.post("/account/signin").send(testUser);
     });
+
     it('should update a user location based on the request body', async () => {
       const agent = request.agent(app);
       await agent.post("/account/signin").send(testUser);
@@ -203,19 +210,14 @@ describe("POST /locations/user/:id", () => {
       const userLocation = await UserLocation.find({ userId })
       const locationToUpdate = userLocation[0]
 
-      const response = await agent.put(`/locations/user/${locationToUpdate._id}`).send(
-        {
-          locationName: "updated name",
-          userRating: 5,
-          userFeedback: "updated food is good!"
-        })
+      const response = await agent.put(`/locations/user/${locationToUpdate._id}`).send(userLocationUpdate)
+      expect(response.status).toBe(200)
 
       const updatedUserLocation = await UserLocation.findById(locationToUpdate._id)
       
-      expect(response.status).toBe(200)
-      expect(updatedUserLocation.locationName).toBe("updated name")
-      expect(updatedUserLocation.userRating).toEqual(5)
-      expect(updatedUserLocation.userFeedback).toContain("updated food is good!")
+      expect(updatedUserLocation.locationName).toBe(userLocationUpdate.locationName)
+      expect(updatedUserLocation.userRating).toEqual(userLocationUpdate.userRating)
+      expect(updatedUserLocation.userFeedback).toContain(userLocationUpdate.userFeedback)
     });
   })
 

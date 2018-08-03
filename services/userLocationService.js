@@ -47,16 +47,9 @@ const createUserLocation = async (req, res, next) => {
 const updateUserLocation = async (req, res, next) => {
   const locationId = req.params.locationId
   const userLocation = await UserLocation.findById(locationId)
-  let userFeedback
-  if (req.body.userFeedback) {
-    userFeedback = [...userLocation.userFeedback, req.body.userFeedback]
-  } else userFeedback = [...userLocation.userFeedback]
+  const userFeedback = helper.isUserFeedBack(req.body.userFeedback, userLocation.userFeedback)
 
-  await UserLocation.findByIdAndUpdate(locationId, {
-    locationName: req.body.locationName,
-    userRating: req.body.userRating,
-    userFeedback: userFeedback
-  });
+  await UserLocation.findByIdAndUpdate(locationId, helper.updateUserLocation(req.body.locationName, req.body.userRating, userFeedback));
 
   res.status(200).json({ message: "Successful update!" })
 }
