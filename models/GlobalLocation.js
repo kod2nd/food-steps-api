@@ -13,4 +13,4 @@ const schema = Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("GlobalLocation", schema);
+module.exports = mongoose.model('GlobalLocation', schema);
