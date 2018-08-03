@@ -70,22 +70,28 @@ beforeEach(async () => {
   userId = await signupUserAndReturnSavedId(testUser);
 });
 
-test("GET /locations/user/:id should return an array of 2 location objects when the total number of existing userLocations for a particular user is 2", async () => {
-  const agent = request.agent(app);
-  await agent.post("/account/signin").send(testUser);
-  await addLocationForUser(agent, location1);
-  await addLocationForUser(agent, { lat: 100, lng: 1.0242 });
-
-  const response = await request(app).get(`/locations/user/${userId}`);
-  expect(response.status).toBe(200);
-  expect(response.body.length).toEqual(2);
+describe('GET /locations/user/:id', () => {
+  test("should return an array of 2 location objects when the total number of existing userLocations for a particular user is 2. User should be authorised to access the route", async () => {
+    const agent = request.agent(app);
+    await agent.post("/account/signin").send(testUser);
+    await addLocationForUser(agent, location1);
+    await addLocationForUser(agent, { lat: 100, lng: 1.0242 });
+  
+    const response = await agent.get(`/locations/user/${userId}`);
+    expect(response.status).toBe(200);
+    expect(response.body.length).toEqual(2);
+  });
+  
+  test('should not be accessable to a user, if that use is not logged in. Return status 401. ', async () => {
+    const response = await request(app).get(`/locations/user/${userId}`)
+    expect(response.status).toBe(401)
+  });
 });
 
 describe("POST /locations/user/:id", () => {
   describe("when the user is not logged in", () => {
     it("responds with a 401 status", async () => {
-      const response = await addLocationForUser(request(app), location1);
-
+      const response = await addLocationForUser(request(app), location1); 
       expect(response.status).toBe(401);
     });
 
