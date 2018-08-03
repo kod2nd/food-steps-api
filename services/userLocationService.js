@@ -34,7 +34,9 @@ const createUserLocation = async (req, res, next) => {
       userId,
       globalLocation: globalLocationId,
       isPublic: req.body.isPublic,
-      locationName: req.body.locationName
+      locationName: req.body.locationName,
+      userRating: req.body.userRating,
+      userFeedBack: req.body.userFeedBack
     });
 
     await userLocation.save();
