@@ -196,7 +196,7 @@ describe("POST /account/signup", () => {
 			expect(jwtAfter.length).toBeLessThanOrEqual(4);
 		});
 
-		it.only("should still pass even if user has not signed in previously", async () => {
+		it("should still pass even if user has not signed in previously", async () => {
 			let response = await request(app).post("/account/signout");
 
 			expect(response.status).toBe(200);
