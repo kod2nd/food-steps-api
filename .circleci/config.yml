@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/node:10
+      - image: circleci/node:10.4.1
     steps:
       - checkout
       - restore_cache: # special step to restore the dependency cache
@@ -18,19 +18,40 @@ jobs:
       - run: # run tests
           name: Run Test
           command: npm test
-  deploy:
+  deploy-to-staging:
     docker:
       - image: buildpack-deps:trusty
     steps:
       - checkout
       - run:
-          name: Deploy Master to Heroku
-          command: git push https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_APP_NAME.git master
+          name: Deploy Master to Heroku Staging
+          command: git push https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_APP_NAME_STAGING.git master
+  deploy-to-production:
+    docker:
+      - image: buildpack-deps:trusty
+    steps:
+      - checkout
+      - run:
+          name: Deploy Master to Heroku Prod
+          command: git push https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_APP_NAME_PRODUCTION.git master
 workflows:
   version: 2
   build-and-deploy:
     jobs:
       - build
-      - deploy:
+      - deploy-to-staging:
+          filters:
+            branches:
+              only: master
           requires:
             - build
+      - hold:
+          type: approval
+          requires:
+            - deploy-to-staging
+      - deploy-to-production:
+          filters:
+            branches:
+              only: master
+          requires:
+            - hold
