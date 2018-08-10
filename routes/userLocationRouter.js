@@ -26,6 +26,11 @@ userLocationsRouter.put(
     handleAsyncError(userLocationService.updateUserLocation)
 )
 
+userLocationsRouter.delete(
+  "/:locationId", passport.authenticate("jwt", { session: false }),
+  handleAsyncError(userLocationService.deleteUserLocation)
+)
+
 module.exports = app => {
   app.use("/locations/user", userLocationsRouter, errorHandler);
 };

@@ -54,8 +54,16 @@ const updateUserLocation = async (req, res, next) => {
   res.status(200).json({ message: "Successful update!" })
 }
 
+
+const deleteUserLocation = async (req, res, next) => {
+  const locationId = req.params.locationId;
+  await UserLocation.findOneAndDelete({_id: locationId});  
+  res.status(200).json({message:"Successful Delete"});
+}
+
 module.exports = {
   displayAllUserLocations,
   createUserLocation,
-  updateUserLocation
+  updateUserLocation, 
+  deleteUserLocation
 };

@@ -245,4 +245,8 @@ describe("POST /locations/user/:id", () => {
       expect(response.status).toBe(400);
     });
   });
+
+ describe('/Delete Should delete userlocation', () => {
+   
+ });
 });
