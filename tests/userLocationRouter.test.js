@@ -21,7 +21,7 @@ const userLocationUpdate = {
   locationName: "updated name",
   userRating: 5,
   userFeedback: "updated food is good!"
-}
+};
 
 const signupUserAndReturnSavedId = async user => {
   const response = await request(app)
@@ -66,11 +66,10 @@ const addLocationForUser = async (agent, location, isPublic = false) => {
   return await agent.post(`/locations/user`).send(requestBody);
 };
 
-const findLocationToUpdate = async (userId) => {
-  const userLocation = await UserLocation.find({ userId })
-  return userLocation[0]
-}
-
+const findLocationToUpdate = async userId => {
+  const userLocation = await UserLocation.find({ userId });
+  return userLocation[0];
+};
 
 beforeAll(setupMemoryServer);
 afterAll(tearDownMemoryServer);
@@ -82,7 +81,7 @@ beforeEach(async () => {
   userId = await signupUserAndReturnSavedId(testUser);
 });
 
-describe('GET /locations/user/', () => {
+describe("GET /locations/user/", () => {
   test("should return an array of 2 location objects when the total number of existing userLocations for a particular user is 2. User should be authorised to access the route", async () => {
     const agent = request.agent(app);
     await agent.post("/account/signin").send(testUser);
@@ -94,9 +93,9 @@ describe('GET /locations/user/', () => {
     expect(response.body.length).toEqual(2);
   });
 
-  test('should not be accessable to a user, if that use is not logged in. Return status 401. ', async () => {
-    const response = await request(app).get(`/locations/user/`)
-    expect(response.status).toBe(401)
+  test("should not be accessable to a user, if that use is not logged in. Return status 401. ", async () => {
+    const response = await request(app).get(`/locations/user/`);
+    expect(response.status).toBe(401);
   });
 });
 
@@ -210,24 +209,36 @@ describe("POST /locations/user/:id", () => {
       await addLocationForUser(agent, location1);
     });
 
-    it('should update a user location based on the request body', async () => {
-      const locationToUpdate = await findLocationToUpdate(userId)
+    it("should update a user location based on the request body", async () => {
+      const locationToUpdate = await findLocationToUpdate(userId);
 
-      const response = await agent.put(`/locations/user/${locationToUpdate._id}`).send(userLocationUpdate)
-      expect(response.status).toBe(200)
+      const response = await agent
+        .put(`/locations/user/${locationToUpdate._id}`)
+        .send(userLocationUpdate);
+      expect(response.status).toBe(200);
 
-      const updatedUserLocation = await UserLocation.findById(locationToUpdate._id)
+      const updatedUserLocation = await UserLocation.findById(
+        locationToUpdate._id
+      );
 
-      expect(updatedUserLocation.locationName).toBe(userLocationUpdate.locationName)
-      expect(updatedUserLocation.userRating).toEqual(userLocationUpdate.userRating)
-      expect(updatedUserLocation.userFeedback).toContain(userLocationUpdate.userFeedback)
+      expect(updatedUserLocation.locationName).toBe(
+        userLocationUpdate.locationName
+      );
+      expect(updatedUserLocation.userRating).toEqual(
+        userLocationUpdate.userRating
+      );
+      expect(updatedUserLocation.userFeedback).toContain(
+        userLocationUpdate.userFeedback
+      );
     });
-    test('should not be accessable to a user, if that use is not logged in. Return status 401. ', async () => {
-      const locationToUpdate = await findLocationToUpdate(userId)
-      const response = await request(app).put(`/locations/user/${locationToUpdate._id}`)
-      expect(response.status).toBe(401)
+    test("should not be accessable to a user, if that use is not logged in. Return status 401. ", async () => {
+      const locationToUpdate = await findLocationToUpdate(userId);
+      const response = await request(app).put(
+        `/locations/user/${locationToUpdate._id}`
+      );
+      expect(response.status).toBe(401);
     });
-  })
+  });
 
   describe("when data is not valid", () => {
     const agent = request.agent(app);
@@ -246,7 +257,38 @@ describe("POST /locations/user/:id", () => {
     });
   });
 
- describe('/Delete Should delete userlocation', () => {
-   
- });
+});
+
+describe("/Delete Should delete userlocation", () => {
+  const agent = request.agent(app);
+  let userLocation = {}
+
+  beforeEach(async () => {
+    await agent.post("/account/signin").send(testUser);
+    const response = await addLocationForUser(agent, location1);
+    expect(response.status).toBe(201);
+
+    userLocation = await UserLocation.findOne({ userId: userId });
+    expect(userLocation).toBeDefined()
+  });
+  
+  it('location_id should delete the user location', async () => {
+    const response = await agent
+    .delete(`/locations/user/${userLocation._id}`)
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe("Successful Delete")
+
+    const userLocations = await UserLocation.find({ userId: userId })
+    expect(userLocations.length).toBe(0)
+  })
+
+  it.only('Non-existing location id should NOT delete the user location', async () => {
+    const response = await agent
+    .delete(`/locations/user/${userId}`)
+    expect(response.status).toBe(404);
+    expect(response.body.message).toBe("Userlocation not found")
+
+    const userLocations = await UserLocation.find({ userId: userId })
+    expect(userLocations.length).toBe(1)
+  })
 });

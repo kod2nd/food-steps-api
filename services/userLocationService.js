@@ -57,8 +57,12 @@ const updateUserLocation = async (req, res, next) => {
 
 const deleteUserLocation = async (req, res, next) => {
   const locationId = req.params.locationId;
-  await UserLocation.findOneAndDelete({_id: locationId});  
-  res.status(200).json({message:"Successful Delete"});
+  const deletedLocation = await UserLocation.findOneAndDelete({_id: locationId});
+  if (!deletedLocation) {
+    res.status(404).json({message:"Userlocation not found"})
+  } else {
+    res.status(200).json({message:"Successful Delete"});
+  }
 }
 
 module.exports = {
