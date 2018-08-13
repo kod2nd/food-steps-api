@@ -259,13 +259,14 @@ describe("POST /locations/user/:id", () => {
 
 });
 
-describe("/Delete Should delete userlocation", () => {
+describe.only("/Delete Should delete userlocation", () => {
   const agent = request.agent(app);
   let userLocation = {}
 
   beforeEach(async () => {
     await agent.post("/account/signin").send(testUser);
     const response = await addLocationForUser(agent, location1);
+    
     expect(response.status).toBe(201);
 
     userLocation = await UserLocation.findOne({ userId: userId });
@@ -275,6 +276,7 @@ describe("/Delete Should delete userlocation", () => {
   it('location_id should delete the user location', async () => {
     const response = await agent
     .delete(`/locations/user/${userLocation._id}`)
+
     expect(response.status).toBe(200);
     expect(response.body.message).toBe("Successful Delete")
 
@@ -282,9 +284,10 @@ describe("/Delete Should delete userlocation", () => {
     expect(userLocations.length).toBe(0)
   })
 
-  it.only('Non-existing location id should NOT delete the user location', async () => {
+  it('Non-existing location id should NOT delete the user location', async () => {
     const response = await agent
     .delete(`/locations/user/${userId}`)
+
     expect(response.status).toBe(404);
     expect(response.body.message).toBe("Userlocation not found")
 
@@ -292,7 +295,7 @@ describe("/Delete Should delete userlocation", () => {
     expect(userLocations.length).toBe(1)
   })
 
-  it.only("user who created the location can only be The One to delete", async () => {
+  it("user who created the location can only be The One to delete", async () => {
     const anotherUser = {
       username: "differentUser",
       password: "12345678",
