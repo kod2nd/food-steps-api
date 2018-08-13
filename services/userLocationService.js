@@ -5,8 +5,8 @@ const helper = require("./serviceHelper/userLocationHelper");
 const { getValidationError } = require("../utils/getCustomErrors");
 
 const displayAllUserLocations = async (req, res, next) => {
-  const userId = req.user._id
-  const existingUserLocations = await helper.getExistingUserLocations(userId)
+  const userId = req.user._id;
+  const existingUserLocations = await helper.getExistingUserLocations(userId);
 
   res.json(existingUserLocations);
 };
@@ -24,10 +24,18 @@ const createUserLocation = async (req, res, next) => {
   let globalLocationId = await helper.getGlobalLocationIdIfExists(lat, lng);
 
   if (!globalLocationId) {
-    globalLocationId = await helper.createGlobalLocation(lat, lng, geocodedName);
+    globalLocationId = await helper.createGlobalLocation(
+      lat,
+      lng,
+      geocodedName
+    );
   }
 
-  const userLocationExists = await helper.isUserLocationExists(userId, lat, lng)
+  const userLocationExists = await helper.isUserLocationExists(
+    userId,
+    lat,
+    lng
+  );
 
   if (!userLocationExists) {
     const userLocation = new UserLocation({
@@ -41,33 +49,49 @@ const createUserLocation = async (req, res, next) => {
 
     await userLocation.save();
     res.status(201).json({ message: "Location created" });
-  } else res.status(400).json({ message: "Location already exists in your locations" })
+  } else
+    res
+      .status(400)
+      .json({ message: "Location already exists in your locations" });
 };
 
 const updateUserLocation = async (req, res, next) => {
-  const locationId = req.params.locationId
-  const userLocation = await UserLocation.findById(locationId)
-  const userFeedback = helper.isUserFeedBack(req.body.userFeedback, userLocation.userFeedback)
+  const locationId = req.params.locationId;
+  const userLocation = await UserLocation.findById(locationId);
+  const userFeedback = helper.isUserFeedBack(
+    req.body.userFeedback,
+    userLocation.userFeedback
+  );
 
-  await UserLocation.findByIdAndUpdate(locationId, helper.updateUserLocation(req.body.locationName, req.body.userRating, userFeedback));
+  await UserLocation.findByIdAndUpdate(
+    locationId,
+    helper.updateUserLocation(
+      req.body.locationName,
+      req.body.userRating,
+      userFeedback
+    )
+  );
 
-  res.status(200).json({ message: "Successful update!" })
-}
-
+  res.status(200).json({ message: "Successful update!" });
+};
 
 const deleteUserLocation = async (req, res, next) => {
+  const userId = req.user._id;
   const locationId = req.params.locationId;
-  const deletedLocation = await UserLocation.findOneAndDelete({_id: locationId});
+  const deletedLocation = await UserLocation.findOneAndDelete({
+    _id: locationId, 
+    userId
+  });
   if (!deletedLocation) {
-    res.status(404).json({message:"Userlocation not found"})
+    res.status(404).json({ message: "Userlocation not found" });
   } else {
-    res.status(200).json({message:"Successful Delete"});
+    res.status(200).json({ message: "Successful Delete" });
   }
-}
+};
 
 module.exports = {
   displayAllUserLocations,
   createUserLocation,
-  updateUserLocation, 
+  updateUserLocation,
   deleteUserLocation
 };

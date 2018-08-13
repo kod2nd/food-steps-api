@@ -291,4 +291,19 @@ describe("/Delete Should delete userlocation", () => {
     const userLocations = await UserLocation.find({ userId: userId })
     expect(userLocations.length).toBe(1)
   })
+
+  it.only("user who created the location can only be The One to delete", async () => {
+    const anotherUser = {
+      username: "differentUser",
+      password: "12345678",
+      email: "someone@example.com"
+    };
+    await signupUserAndReturnSavedId(anotherUser);
+    const anotherUserAgent = request.agent(app);
+    await anotherUserAgent.post("/account/signin").send(anotherUser);  
+
+    const response = await anotherUserAgent
+    .delete(`/locations/user/${userLocation._id}`) 
+    expect(response.status).toBe(404)
+  })
 });
