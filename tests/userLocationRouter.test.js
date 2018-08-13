@@ -10,42 +10,17 @@ const {
   resetMemoryServer
 } = require("../utils/testUtils");
 
-// To Move to testUtils later
+// Test Data Setup
 const testUser = {
   username: "testUser",
   password: "12345678",
   email: "abc@abc.com"
 };
 
-const userLocationUpdate = {
-  locationName: "updated name",
-  userRating: 5,
-  userFeedback: "updated food is good!"
-};
-
-const signupUserAndReturnSavedId = async user => {
-  const response = await request(app)
-    .post("/account/signup")
-    .send(user);
-  expect(response.status).toBe(201);
-
-  const { username } = user;
-  const userCreated = await User.findOne({ username });
-  return userCreated._id;
-};
-
-const inputTestLocation = (lat, lng) => {
-  return {
-    lat,
-    lng,
-    geocodedLocationName: "Test Location",
-    locationName: "User Given name for Test Location"
-  };
-};
-
-const inputTestPublicLocation = (lat, lng) => {
-  const privatelocation = inputTestLocation(lat, lng);
-  return { ...privatelocation, isPublic: true };
+const anotherUser = {
+  username: "anotherUser",
+  password: "12345678",
+  email: "someone@example.com"
 };
 
 const location1 = {
@@ -54,8 +29,50 @@ const location1 = {
 };
 
 const location2 = {
-  lat: 1.3112,
-  lng: 103.795
+  lat: 100,
+  lng: 1.0242
+};
+
+const userLocationUpdate = {
+  locationName: "updated name",
+  userRating: 5,
+  userFeedback: "updated food is good!"
+};
+
+// Test Support Methods
+const signupUserAndReturnSavedUserId = async user => {
+  const response = await request(app)
+    .post("/account/signup")
+    .send(user);
+  expect(response.status).toBe(201);
+  
+  const { username } = user;
+  const userCreated = await User.findOne({ username });
+  return userCreated._id;
+};
+
+const getAgentForAnotherUser = async () => {
+  await signupUserAndReturnSavedUserId(anotherUser);
+  
+  const anotherUserAgent = request.agent(app);
+  const response = await anotherUserAgent.post("/account/signin").send(anotherUser);
+  expect(response.status).toBe(200);
+
+  return anotherUserAgent;
+};
+
+const inputTestLocation = (lat, lng) => {
+  return {
+    lat,
+    lng,
+    geocodedLocationName: "Geocoded Test Location",
+    locationName: "User Given Name for Test Location"
+  };
+};
+
+const inputTestPublicLocation = (lat, lng) => {
+  const privatelocation = inputTestLocation(lat, lng);
+  return { ...privatelocation, isPublic: true };
 };
 
 const addLocationForUser = async (agent, location, isPublic = false) => {
@@ -66,34 +83,30 @@ const addLocationForUser = async (agent, location, isPublic = false) => {
   return await agent.post(`/locations/user`).send(requestBody);
 };
 
-const findLocationToUpdate = async userId => {
-  const userLocation = await UserLocation.find({ userId });
-  return userLocation[0];
-};
-
 beforeAll(setupMemoryServer);
 afterAll(tearDownMemoryServer);
 
+// placeholder to store userId for testUser for each test case
 let userId;
 
 beforeEach(async () => {
   resetMemoryServer();
-  userId = await signupUserAndReturnSavedId(testUser);
+  userId = await signupUserAndReturnSavedUserId(testUser);
 });
 
 describe("GET /locations/user/", () => {
-  test("should return an array of 2 location objects when the total number of existing userLocations for a particular user is 2. User should be authorised to access the route", async () => {
+  it("should return an array of 2 location objects for a logged-in user with 2 existing userLocations", async () => {
     const agent = request.agent(app);
     await agent.post("/account/signin").send(testUser);
     await addLocationForUser(agent, location1);
-    await addLocationForUser(agent, { lat: 100, lng: 1.0242 });
+    await addLocationForUser(agent, location2);
 
     const response = await agent.get(`/locations/user/`);
     expect(response.status).toBe(200);
     expect(response.body.length).toEqual(2);
   });
 
-  test("should not be accessable to a user, if that use is not logged in. Return status 401. ", async () => {
+  it("should return 401 when user is not logged in", async () => {
     const response = await request(app).get(`/locations/user/`);
     expect(response.status).toBe(401);
   });
@@ -130,7 +143,7 @@ describe("POST /locations/user/:id", () => {
       expect(response.status).toBe(201);
       expect(response.body.message).toEqual("Location created");
 
-      const userLocations = await UserLocation.find({ userId: userId });
+      const userLocations = await UserLocation.find({ userId });
       expect(userLocations.length).toBe(1);
 
       const globalLocation = await GlobalLocation.findById(
@@ -144,8 +157,8 @@ describe("POST /locations/user/:id", () => {
       expect(response.status).toBe(201);
       expect(response.body.message).toEqual("Location created");
 
-      const userLocations = await UserLocation.findOne({ userId: userId });
-      expect(userLocations.isPublic).toBe(false);
+      const userLocation = await UserLocation.findOne({ userId });
+      expect(userLocation.isPublic).toBe(false);
     });
 
     it("creates a location when user flags isPublic to be true", async () => {
@@ -153,23 +166,16 @@ describe("POST /locations/user/:id", () => {
       expect(response.status).toBe(201);
       expect(response.body.message).toEqual("Location created");
 
-      const userLocations = await UserLocation.findOne({ userId: userId });
-      expect(userLocations.isPublic).toBe(true);
+      const userLocation = await UserLocation.findOne({ userId });
+      expect(userLocation.isPublic).toBe(true);
     });
 
     it("should not add to globalLocation if another user has added the same location", async () => {
-      const anotherUser = {
-        username: "differentUser",
-        password: "12345678",
-        email: "someone@example.com"
-      };
-      const anotherUserId = await signupUserAndReturnSavedId(anotherUser);
-      const anotherUserAgent = request.agent(app);
-      await anotherUserAgent.post("/account/signin").send(anotherUser);
-      await addLocationForUser(anotherUserAgent, location1);
-
       const { lat, lng } = location1;
       await addLocationForUser(agent, location1);
+
+      const anotherUserAgent = await getAgentForAnotherUser();
+      await addLocationForUser(anotherUserAgent, location1);
 
       const globalLocation = await GlobalLocation.find({ lat, lng });
       expect(globalLocation.length).toEqual(1);
@@ -177,13 +183,16 @@ describe("POST /locations/user/:id", () => {
 
     it("should add to globalLocation if the global location does not contain the same location", async () => {
       await addLocationForUser(agent, location1);
-
       await addLocationForUser(agent, location2);
 
-      const globalLocation = await GlobalLocation.find();
-      expect(globalLocation.length).toEqual(2);
-      expect(globalLocation).toContainEqual(expect.objectContaining(location1));
-      expect(globalLocation).toContainEqual(expect.objectContaining(location2));
+      const globalLocations = await GlobalLocation.find();
+      expect(globalLocations.length).toEqual(2);
+      expect(globalLocations).toContainEqual(
+        expect.objectContaining(location1)
+      );
+      expect(globalLocations).toContainEqual(
+        expect.objectContaining(location2)
+      );
     });
 
     it("should not add to a new UserLocation if user already has an existing location entry", async () => {
@@ -192,51 +201,10 @@ describe("POST /locations/user/:id", () => {
       const response = await addLocationForUser(agent, location1, true);
       expect(response.status).toBe(400);
 
-      const userLocation = await UserLocation.find({ userId }).populate(
+      const userLocations = await UserLocation.find({ userId }).populate(
         "globalLocation"
       );
-      expect(userLocation.length).toEqual(1);
-    });
-  });
-
-  describe("PUT/locations/user/:id", () => {
-    // Feels like this agent and beforeEach is repeated. Should refactor.
-    const agent = request.agent(app);
-
-    beforeEach(async () => {
-      await agent.post("/account/signin").send(testUser);
-      await agent.post("/account/signin").send(testUser);
-      await addLocationForUser(agent, location1);
-    });
-
-    it("should update a user location based on the request body", async () => {
-      const locationToUpdate = await findLocationToUpdate(userId);
-
-      const response = await agent
-        .put(`/locations/user/${locationToUpdate._id}`)
-        .send(userLocationUpdate);
-      expect(response.status).toBe(200);
-
-      const updatedUserLocation = await UserLocation.findById(
-        locationToUpdate._id
-      );
-
-      expect(updatedUserLocation.locationName).toBe(
-        userLocationUpdate.locationName
-      );
-      expect(updatedUserLocation.userRating).toEqual(
-        userLocationUpdate.userRating
-      );
-      expect(updatedUserLocation.userFeedback).toContain(
-        userLocationUpdate.userFeedback
-      );
-    });
-    test("should not be accessable to a user, if that use is not logged in. Return status 401. ", async () => {
-      const locationToUpdate = await findLocationToUpdate(userId);
-      const response = await request(app).put(
-        `/locations/user/${locationToUpdate._id}`
-      );
-      expect(response.status).toBe(401);
+      expect(userLocations.length).toEqual(1);
     });
   });
 
@@ -250,63 +218,116 @@ describe("POST /locations/user/:id", () => {
     it("should respond with a Bad Request status", async () => {
       const response = await addLocationForUser(agent, {
         lng: 103.123,
-        geocodedLocationName: "Test Location",
-        locationName: "User Given name for Test Location"
+        geocodedLocationName: "Geocoded Test Location w/o lat",
+        locationName: "User Given Name for Test Location w/o lat"
       });
       expect(response.status).toBe(400);
     });
   });
-
 });
 
-describe.only("/Delete Should delete userlocation", () => {
+describe("PUT /locations/user/:id", () => {
+  // Feels like this agent and beforeEach is repeated. Should refactor.
   const agent = request.agent(app);
-  let userLocation = {}
+  let locationIdToUpdate = '';
+  
+  beforeEach(async () => {
+    await agent.post("/account/signin").send(testUser);
+    await addLocationForUser(agent, location1);
+    
+    const userLocation = await UserLocation.find({ userId });
+    locationIdToUpdate = userLocation[0]._id;
+  });
+
+  it("should update a user location based on the request body", async () => {
+    const response = await agent
+      .put(`/locations/user/${locationIdToUpdate}`)
+      .send(userLocationUpdate);
+    expect(response.status).toBe(200);
+
+    const updatedUserLocation = await UserLocation.findById(locationIdToUpdate);
+
+    expect(updatedUserLocation.locationName).toBe(
+      userLocationUpdate.locationName
+    );
+    expect(updatedUserLocation.userRating).toEqual(
+      userLocationUpdate.userRating
+    );
+    expect(updatedUserLocation.userFeedback).toContain(
+      userLocationUpdate.userFeedback
+    );
+  });
+
+  it("should return 401 when user is not logged in", async () => {
+    const response = await request(app).put(
+      `/locations/user/${locationIdToUpdate}`
+    );
+    expect(response.status).toBe(401);
+  });
+});
+
+describe("/Delete Should delete userlocation", () => {
+  const agent = request.agent(app);
+  let userLocationId = "";
 
   beforeEach(async () => {
     await agent.post("/account/signin").send(testUser);
+
     const response = await addLocationForUser(agent, location1);
-    
     expect(response.status).toBe(201);
 
-    userLocation = await UserLocation.findOne({ userId: userId });
-    expect(userLocation).toBeDefined()
+    const userLocation = await UserLocation.findOne({ userId });
+    expect(userLocation).toBeDefined();
+    userLocationId = userLocation._id;
   });
-  
-  it('location_id should delete the user location', async () => {
-    const response = await agent
-    .delete(`/locations/user/${userLocation._id}`)
 
-    expect(response.status).toBe(200);
-    expect(response.body.message).toBe("Successful Delete")
+  describe("when the user is not logged in", () => {
+    it("responds with a 401 status", async () => {
+      const response = await request(app).delete(
+        `/locations/user/${userLocationId}`
+      );
+      expect(response.status).toBe(401);
+    });
 
-    const userLocations = await UserLocation.find({ userId: userId })
-    expect(userLocations.length).toBe(0)
-  })
+    it("does not delete the location", async () => {
+      await request(app).delete(`/locations/user/${userLocationId}`);
 
-  it('Non-existing location id should NOT delete the user location', async () => {
-    const response = await agent
-    .delete(`/locations/user/${userId}`)
+      const userLocations = await UserLocation.find();
+      expect(userLocations).toHaveLength(1);
+    });
+  });
 
-    expect(response.status).toBe(404);
-    expect(response.body.message).toBe("Userlocation not found")
+  describe("when user is logged in", () => {
+    it("should delete the user location by userLocationId", async () => {
+      const response = await agent.delete(`/locations/user/${userLocationId}`);
 
-    const userLocations = await UserLocation.find({ userId: userId })
-    expect(userLocations.length).toBe(1)
-  })
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe("Successful Delete");
 
-  it("user who created the location can only be The One to delete", async () => {
-    const anotherUser = {
-      username: "differentUser",
-      password: "12345678",
-      email: "someone@example.com"
-    };
-    await signupUserAndReturnSavedId(anotherUser);
-    const anotherUserAgent = request.agent(app);
-    await anotherUserAgent.post("/account/signin").send(anotherUser);  
+      const userLocations = await UserLocation.find({ userId: userId });
+      expect(userLocations.length).toBe(0);
+    });
 
-    const response = await anotherUserAgent
-    .delete(`/locations/user/${userLocation._id}`) 
-    expect(response.status).toBe(404)
-  })
+    it("should NOT delete the user location if id passed-in is non-existing userLocationId", async () => {
+      const response = await agent.delete(`/locations/user/${userId}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toBe("Userlocation not found");
+
+      const userLocations = await UserLocation.find({ userId });
+      expect(userLocations.length).toBe(1);
+    });
+
+    it("should NOT delete the user location belongs to other user", async () => {
+      const anotherUserAgent = await getAgentForAnotherUser();
+
+      const response = await anotherUserAgent.delete(
+        `/locations/user/${userLocationId}`
+      );
+      expect(response.status).toBe(404);
+
+      const userLocations = await UserLocation.find({ userId });
+      expect(userLocations.length).toBe(1);
+    });
+  });
 });
