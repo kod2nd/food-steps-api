@@ -21,33 +21,10 @@ const createUserLocation = async (req, res, next) => {
     return next(getValidationError(`Invalid lat/lng [${lat}, ${lng}]`));
   }
 
-  let globalLocationId = await helper.getGlobalLocationIdIfExists(lat, lng);
+  const globalLocation = await helper.createGlobalLocationIfNotExisting(lat, lng, geocodedName);
+  const isUserLocationCreated = await helper.createUserLocationIfNotExisting(userId, globalLocation, req.body);
 
-  if (!globalLocationId) {
-    globalLocationId = await helper.createGlobalLocation(
-      lat,
-      lng,
-      geocodedName
-    );
-  }
-
-  const userLocationExists = await helper.isUserLocationExists(
-    userId,
-    lat,
-    lng
-  );
-
-  if (!userLocationExists) {
-    const userLocation = new UserLocation({
-      userId,
-      globalLocation: globalLocationId,
-      isPublic: req.body.isPublic,
-      locationName: req.body.locationName,
-      userRating: req.body.userRating,
-      userFeedBack: req.body.userFeedBack
-    });
-
-    await userLocation.save();
+  if (isUserLocationCreated) {
     res.status(201).json({ message: "Location created" });
   } else
     res
@@ -78,10 +55,12 @@ const updateUserLocation = async (req, res, next) => {
 const deleteUserLocation = async (req, res, next) => {
   const userId = req.user._id;
   const locationId = req.params.locationId;
+  
   const deletedLocation = await UserLocation.findOneAndDelete({
     _id: locationId, 
     userId
   });
+
   if (!deletedLocation) {
     res.status(404).json({ message: "Userlocation not found" });
   } else {
