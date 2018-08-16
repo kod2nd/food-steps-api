@@ -62,18 +62,9 @@ const isUserFeedBack = (requestBodyUserFeedBack, array) => {
   return [...array];
 };
 
-const updateUserLocation = (locationName, userRating, userFeedback) => {
-  return {
-    locationName,
-    userRating,
-    userFeedback
-  };
-};
-
 module.exports = {
   getExistingUserLocations,
   createGlobalLocationIfNotExisting,
   createUserLocationIfNotExisting,
-  isUserFeedBack,
-  updateUserLocation
+  isUserFeedBack
 };

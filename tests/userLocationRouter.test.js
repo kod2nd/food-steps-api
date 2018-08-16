@@ -34,9 +34,7 @@ const location2 = {
 };
 
 const userLocationUpdate = {
-  locationName: "updated name",
-  userRating: 5,
-  userFeedback: "updated food is good!"
+  locationName: "updated name"
 };
 
 // Test Support Methods
@@ -250,12 +248,7 @@ describe("PUT /locations/user/:id", () => {
     expect(updatedUserLocation.locationName).toBe(
       userLocationUpdate.locationName
     );
-    expect(updatedUserLocation.userRating).toEqual(
-      userLocationUpdate.userRating
-    );
-    expect(updatedUserLocation.userFeedback).toContain(
-      userLocationUpdate.userFeedback
-    );
+
   });
 
   it("should return 401 when user is not logged in", async () => {

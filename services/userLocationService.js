@@ -1,4 +1,3 @@
-const GlobalLocation = require("../models/GlobalLocation");
 const UserLocation = require("../models/UserLocation");
 const helper = require("./serviceHelper/userLocationHelper");
 
@@ -34,19 +33,13 @@ const createUserLocation = async (req, res, next) => {
 
 const updateUserLocation = async (req, res, next) => {
   const locationId = req.params.locationId;
-  const userLocation = await UserLocation.findById(locationId);
-  const userFeedback = helper.isUserFeedBack(
-    req.body.userFeedback,
-    userLocation.userFeedback
-  );
 
+  const updateObject = {
+    locationName: req.body.locationName
+  };
   await UserLocation.findByIdAndUpdate(
     locationId,
-    helper.updateUserLocation(
-      req.body.locationName,
-      req.body.userRating,
-      userFeedback
-    )
+    updateObject
   );
 
   res.status(200).json({ message: "Successful update!" });
